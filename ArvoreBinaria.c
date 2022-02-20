@@ -8,6 +8,7 @@ typedef struct No{
     int valor;
     struct No *esq;
     struct No *dir;
+    struct No *pai;
 }No;
 
 typedef struct{
@@ -18,9 +19,7 @@ typedef struct{
 }Arvore;
 
 void inicializaArvore(Arvore *a){
-    a = (Arvore*)mallloc(sizeof(Arvore));
-    a->raiz->esq = NULL;
-    a->raiz->dir = NULL;
+    a->raiz = NULL;
     a->tamanho = 0;
 }
 
@@ -32,6 +31,7 @@ void insereArvore(Arvore *a, int v){
     novo->valor = v;
     novo->dir = NULL;
     novo->esq = NULL;
+    novo->pai = NULL;
 
     if(a->raiz==NULL){
         a->raiz = novo;
@@ -51,9 +51,11 @@ void insereArvore(Arvore *a, int v){
     if(aux==NULL){
         if(v< ant->valor){
             ant->esq = novo;
+            
         }else{
             ant->dir = novo;
         }
+        novo->pai = ant;
     /*Se o valor já existir na árvore a função retorna sem adicionar nada
     */
     }else{
@@ -64,84 +66,135 @@ void insereArvore(Arvore *a, int v){
 }
 
 void removeArvore(No *n,int v){
-    No *ant = NULL;
-    No *remove = NULL;
+    No *ant = n;
 
-    if(n==NULL){
+    if(ant==NULL){
         return;
     }else{
-        if(v==n->valor){
-            if(n->esq==NULL && n->dir==NULL){
-                free(n);
+        if(v==ant->valor){
+            /* Caso o nó seja um nó folha
+            */
+            if(ant->esq==NULL && ant->dir==NULL){
+                free(ant);
                 return;
             }else{
-                if(n->dir!=NULL && n->esq!= NULL){
-                    No *aux = n->dir;
+                /* Caso o nó tenha dois filhos, o while procura o elemento mais a esquerda do nó da direita,
+                    troca de lugar os valores dos dois e remove a folha com valor trocado
+                */
+                if(ant->dir!=NULL && ant->esq!= NULL){
+                    No *aux = ant->dir;
                     while(aux->esq!=NULL)
                         aux = aux->esq;
                     
-                    n->valor = aux->valor;
+                    ant->valor = aux->valor;
                     aux->valor = v;
-                    removeArvore(n,v);
+                    removeArvore(aux,v);
 
                 }else{
-                    No *aux2;
-                    if(n->esq!=NULL){
-                        aux2 = n->esq;
+                    /* Caso o Nó tenha um único filho
+                    */
+                    No *aux2 = ant;
+                     /* O ponteiro ant recebe o filho, o ponteiro pai do nó que vai ser excluido aponta para o próximo da arvore
+                        e é liberado a memória do nó a ser excluído
+                    */
+                    if(ant->esq!=NULL){
+                        ant = ant->esq;
                     }else{
-                        aux2 = n->dir;
+                        ant = ant->dir;
                     }
-                    free(n);
+                    ant->pai = aux2->pai;
+                    if(ant->pai->dir == aux2){
+                        ant->pai->dir = ant;
+                    }else{
+                        ant->pai->esq = ant;
+                    }
+                     
+                    free(aux2);
 
                 }
             }
         }else{
-            if(v<n->valor){
-                removeArvore(n->esq,v);
+            if(v<ant->valor){
+                removeArvore(ant->esq,v);
             }else{
-                removeArvore(n->dir,v);
+                removeArvore(ant->dir,v);
             }
         }
     }
 }
 
-void deletaArvore(Arvore *a){
-    No *aux = a->raiz;
-    while(a->raiz!=NULL){
+void deletaArvore(No *n){
 
-    if(aux->esq!=NULL){
-        deletaArvore(aux->esq);
-    }else{
-        if(aux->dir!=NULL){
-            deletaArvore(aux->dir);
-        }
+    if(n!=NULL){
+        deletaArvore(n->esq);
+        deletaArvore(n->dir);
+        free(n);
     }
 }
-}
 
-void imprimePreOrdem(Arvore *a){
-    No *aux = a->raiz;
+void imprimePreOrdem(No *n){
+    No *aux = n;
     if(aux != NULL){
         printf(" %d ", aux->valor);
+        printf("\n");
         imprimePreOrdem(aux->esq);
         imprimePreOrdem(aux->dir);
     }
  }
 
+void imprimeEmOrdem(No *n){
+  if(n != NULL){
+   imprimeEmOrdem(n->esq);
+   printf(" %d ", n->valor);
+   printf("\n");
+   imprimeEmOrdem(n->dir);
+
+}
+}
+
+void imprimePosOrdem(No *n){
+  if(n != NULL){
+   imprimePosOrdem(n->esq);
+   imprimePosOrdem(n->dir);
+   printf(" %d ", n->valor);
+   printf("\n");
+}
+}
 
 int main(){
-    Arvore *teste;
-    int i,r;
+    Arvore *teste = (Arvore*)malloc(sizeof(Arvore));
+    int i,r,op,n;
 
     inicializaArvore(teste);
     srand(time(NULL));
 
     for (i=0;i<10;i++){
-        r= rand() % 10;
+        r= rand() % 1000;
         insereArvore(teste,r);
     }
-    imprimePreOrdem(teste);
 
+    printf("Escolha : 1-Pre Ordem 2-Em Ordem 3-Pos Ordem \n");
+    scanf("%d",&op);
+    switch(op){
+        case 1:
+        imprimePreOrdem(teste->raiz);
+        break; 
 
+        case 2:
+        imprimeEmOrdem(teste->raiz);
+
+        case 3:
+        imprimePosOrdem(teste->raiz);
+
+    }
+
+    printf("Escolha um elemento para remover\n");
+    scanf("%d",&n);
+    
+    removeArvore(teste->raiz,n);
+    imprimeEmOrdem(teste->raiz);
+
+    deletaArvore(teste->raiz);
+    imprimeEmOrdem(teste->raiz);
 
 }
